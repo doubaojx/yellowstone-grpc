@@ -529,8 +529,9 @@ impl GrpcService {
                         Message::Transaction(msg) => {
                             if msg.slot % 100 == 0 && msg.transaction.index % 100 == 0 {
                                 error!(
-                                    "geyser received transaction at slot: {slot} transaction index: {}",
-                                    msg.transaction.index
+                                    "geyser received transaction at slot: {} transaction index: {}",
+                                    msg.slot,
+                                    msg.transaction.index,
                                 );
                             }
                         },
@@ -652,8 +653,9 @@ impl GrpcService {
                             sealed_block_msg = slot_messages.try_seal(&mut msgid_gen);
                             if msg.slot % 100 == 0 && msg.transaction.index % 100 == 0 {
                                 error!(
-                                    "BtreeMap received transaction at slot: {slot} transaction index: {}",
-                                    msg.transaction.index
+                                    "BtreeMap received transaction at slot: {} transaction index: {}",
+                                    msg.slot,
+                                    msg.transaction.index,
                                 );
                             }
                         }
