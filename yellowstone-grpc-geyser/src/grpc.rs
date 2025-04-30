@@ -525,6 +525,18 @@ impl GrpcService {
         loop {
             tokio::select! {
                 Some(message) = messages_rx.recv() => {
+                    match &message {
+                        Message::Transaction(msg) => {
+                            if msg.slot % 100 == 0 && msg.transaction.index % 100 == 0 {
+                                error!(
+                                    "geyser received transaction at slot: {slot} transaction index: {}",
+                                    msg.transaction.index
+                                );
+                            }
+                        },
+                        _ => {}
+                    }
+
                     metrics::message_queue_size_dec();
                     let msgid = msgid_gen.next();
 
@@ -565,12 +577,12 @@ impl GrpcService {
                                                     if let Some(block_meta) = slot_messages.block_meta {
                                                         let block_txn_count = block_meta.executed_transaction_count as usize;
                                                         let msg_txn_count = slot_messages.transactions.len();
-                                                        if block_txn_count != msg_txn_count {
-                                                            reasons.push("InvalidTxnCount");
-                                                            error!("failed to reconstruct #{slot} -- tx count: {block_txn_count} vs {msg_txn_count}");
-                                                        }
                                                         let block_entries_count = block_meta.entries_count as usize;
                                                         let msg_entries_count = slot_messages.entries.len();
+                                                        if block_txn_count != msg_txn_count {
+                                                            reasons.push("InvalidTxnCount");
+                                                            error!("failed to reconstruct #{slot} -- tx count: {block_txn_count} vs {msg_txn_count} -- entries count: {msg_entries_count}");
+                                                        }
                                                         if block_entries_count != msg_entries_count {
                                                             reasons.push("InvalidEntriesCount");
                                                             error!("failed to reconstruct #{slot} -- entries count: {block_entries_count} vs {msg_entries_count}");
@@ -638,6 +650,12 @@ impl GrpcService {
                         Message::Transaction(msg) => {
                             slot_messages.transactions.push(Arc::clone(&msg.transaction));
                             sealed_block_msg = slot_messages.try_seal(&mut msgid_gen);
+                            if msg.slot % 100 == 0 && msg.transaction.index % 100 == 0 {
+                                error!(
+                                    "BtreeMap received transaction at slot: {slot} transaction index: {}",
+                                    msg.transaction.index
+                                );
+                            }
                         }
                         // Dedup accounts by max write_version
                         Message::Account(msg) => {
